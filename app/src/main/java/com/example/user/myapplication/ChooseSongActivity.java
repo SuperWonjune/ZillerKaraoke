@@ -27,7 +27,7 @@ import java.util.ArrayList;
 public class ChooseSongActivity extends AppCompatActivity {
     ArrayList<SongListViewItem> SongList;
     ListView listview;
-
+    TextView activity_title;
 
     public void onListBtnClick(int position) {
 
@@ -71,6 +71,10 @@ public class ChooseSongActivity extends AppCompatActivity {
             title.setText(s.title);
             artist.setText(s.artist);
 
+            ApplyFonts(mContext,title);
+            ApplyFonts(mContext,artist);
+
+
             Bitmap b;
 
             if(s.albumCover != null){
@@ -92,6 +96,9 @@ public class ChooseSongActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_choose_song);
 
+        activity_title=(TextView)findViewById(R.id.choose_song_title);
+        ApplyFonts(this,activity_title);
+
         MyApplication myApp = new MyApplication(this);
         myApp.loadData();
         SongList = myApp.getSongList();
@@ -109,27 +116,10 @@ public class ChooseSongActivity extends AppCompatActivity {
             }
         });
     }
-/*
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
-        View view = inflater.inflate(R.layout.activity_choose_song, container, false);
-        MyApplication myApp = (MyApplication) this.getApplication();
-        SongList = myApp.getSongList();
-
-        listview = view.findViewById(R.id.choose_song_listview);
-        listview.setAdapter(new MusicAdapter(this));
-        listview.setOnItemClickListener(new AdapterView.OnItemClickListener(){
-            @Override
-            public void onItemClick(AdapterView parent, View v, int position, long id){
-                SongListViewItem s = SongList.get(position);
-                String path = s.data;
-                Intent intent = new Intent(ChooseSongActivity.this, SingingActivity.class);
-                intent.putExtra("position", position);
-                startActivity(intent);
-            }
-        });
-
-        return view;
+    //폰트 적용
+    public static void ApplyFonts(Context ct, TextView tv){
+        Typeface face=Typeface.createFromAsset(ct.getAssets(),"fonts/BMHANNA_11yrs_ttf.mp3");
+        tv.setTypeface(face);
     }
-    */
 }

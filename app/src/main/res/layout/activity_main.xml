@@ -10,7 +10,7 @@
 
 
     <ImageView
-        android:id="@+id/plant_dog"
+        android:id="@+id/main_plant_dog"
         android:layout_width="200dp"
         android:layout_height="200dp"
         android:layout_alignParentBottom="true"
@@ -18,13 +18,17 @@
         android:layout_marginBottom="132dp" />
 
     <ImageView
-        android:id="@+id/note"
+        android:id="@+id/main_song_list"
         android:layout_width="100dp"
         android:layout_height="70dp"
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
-        android:src="@drawable/note_button" />
+        android:src="@drawable/note_button"
+        />
+
+
+
 
 
 

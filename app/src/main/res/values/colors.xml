@@ -5,6 +5,8 @@
     <color name="colorAccent">#FF4081</color>
     <color name="lightorange">#fdf2df</color>
     <color name="lightorangeDark">#ebd6ab</color>
-
-    <color name="buttoncolor">#fc6163</color>
+    <color name="white">#ffff</color>
+    <color name="black">#000</color>
+    <color name="pink">#fc6163</color>
+    <color name="transparent_pink">#99fc6163</color>
 </resources>
