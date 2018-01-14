@@ -10,55 +10,35 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class LoadingActivity extends Activity {
     RelativeLayout layout1,layout2;
+    RelativeLayout LoadingMainLayout;
     Button btnsub;
     Animation uptodown,downtoup;
 
-    final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 1;
+
+    // 권한 요청
+    //static final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 1;
+    //static final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 2;
+    static final int MULTIPLE_PERMISSIONS = 10;
+
+    String[] permissions= new String[]{
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.RECORD_AUDIO};
+
 
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // 권한 요청 처리
-
-        // Here, thisActivity is the current activity
-        Context thisActivity;
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.READ_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.READ_EXTERNAL_STORAGE)) {
-
-                // Show an expanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-
-            } else {
-
-                // No explanation needed, we can request the permission.
-
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                        MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
-
-                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
-                // app-defined int constant. The callback method gets the
-                // result of the request.
-            }
-        }
-
-
-
-
 
         setContentView(R.layout.activity_loading);
         layout1=(RelativeLayout)findViewById(R.id.loading_uplayout);
@@ -67,6 +47,15 @@ public class LoadingActivity extends Activity {
         uptodown= AnimationUtils.loadAnimation(this,R.anim.uptodown);
         downtoup= AnimationUtils.loadAnimation(this,R.anim.righttoleft);
 
+
+
+
+
+        // 권한 확인
+        checkPermissions();
+
+
+        // 애니메이션 등록
         Handler handler=new Handler();
 
         layout2.setAnimation(downtoup);
@@ -77,39 +66,61 @@ public class LoadingActivity extends Activity {
             }
         },1000);
 
-        handler.postDelayed(new Runnable() {
+
+
+        // 화면을 클릭하면 다음 Activity로 이동
+        layout1.setOnClickListener( new View.OnClickListener() {
+
             @Override
-            public void run() {
+            public void onClick(View arg0) {
                 Intent intent=new Intent(getBaseContext(),MainActivity.class);
                 startActivity(intent);
                 finish();
-            }
-        },3000);
 
+            }
+        });
+        layout2.setOnClickListener( new View.OnClickListener() {
+
+            @Override
+            public void onClick(View arg0) {
+                Intent intent=new Intent(getBaseContext(),MainActivity.class);
+                startActivity(intent);
+                finish();
+
+            }
+        });
     }
 
+
+    // 권한 요청
+    private  boolean checkPermissions() {
+        int result;
+        List<String> listPermissionsNeeded = new ArrayList<>();
+        for (String p:permissions) {
+            result = ContextCompat.checkSelfPermission(this,p);
+            if (result != PackageManager.PERMISSION_GRANTED) {
+                listPermissionsNeeded.add(p);
+            }
+        }
+        if (!listPermissionsNeeded.isEmpty()) {
+            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]),MULTIPLE_PERMISSIONS );
+            return false;
+        }
+        return true;
+    }
+
+    // 권한 요청 응답
     @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch (requestCode) {
-            case MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                    // permission was granted, yay! Do the
-                    // contacts-related task you need to do.
-
+            case MULTIPLE_PERMISSIONS:{
+                if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                    // permissions granted.
                 } else {
 
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
                 }
                 return;
             }
-
-            // other 'case' lines to check for other
-            // permissions this app might request
         }
     }
 }

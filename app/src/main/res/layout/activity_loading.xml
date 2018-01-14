@@ -19,12 +19,29 @@
             android:layout_width="350dp"
             android:layout_height="350dp"
             android:layout_centerInParent="true">
+
             <ImageView
+                android:id="@+id/imageView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_centerHorizontal="true"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentStart="true"
                 android:layout_centerVertical="true"
                 android:src="@drawable/loading_title" />
+
+            <TextView
+                android:id="@+id/pressToContinueText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_centerHorizontal="true"
+                android:layout_centerVertical="true"
+                android:layout_marginBottom="21dp"
+                android:fontFamily="serif-monospace"
+                android:text="아무 곳이나 터치하세요!"
+                android:textColor="@color/pink"
+                android:textSize="24sp"
+                android:textStyle="bold" />
 
 
         </RelativeLayout>
@@ -48,4 +65,5 @@
 
 
     </RelativeLayout>
+
 </LinearLayout>

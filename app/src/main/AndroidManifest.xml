@@ -3,6 +3,7 @@
     package="com.example.user.myapplication">
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO"></uses-permission>
 
     <application
         android:allowBackup="true"
@@ -22,11 +23,9 @@
         <activity android:name=".ChooseSongActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".SingingActivity"></activity>
+        <activity android:name=".SingingActivity" />
     </application>
 
 </manifest>
