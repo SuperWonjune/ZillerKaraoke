@@ -21,8 +21,12 @@ import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
+
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import be.tarsos.dsp.AudioDispatcher;
 import be.tarsos.dsp.AudioEvent;
@@ -42,6 +46,8 @@ public class SingingActivity extends AppCompatActivity {
     int position, width;
     ImageView albumArt;
     ImageView playbtn, stopbtn;
+
+    ImageView plant_dog;
 
 
     // 음 높이 표시 관련
@@ -91,8 +97,12 @@ public class SingingActivity extends AppCompatActivity {
     private Handler handler = new Handler();
     private int timer_fps = 30;
 
-    ImageView scoreBar;
-    RelativeLayout scoreLayout;
+    private ImageView scoreBar;
+    private RelativeLayout scoreLayout;
+
+    private List<ImageView> bluePixelList = new ArrayList<>();
+
+    GlideDrawableImageViewTarget ImageViewTarget;
 
     //--------------------------------------------
 
@@ -128,6 +138,8 @@ public class SingingActivity extends AppCompatActivity {
 
 
 
+
+        // 음악 재생
 
         DisplayMetrics dm = new DisplayMetrics();
         WindowManager wm = (WindowManager) getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
@@ -197,6 +209,12 @@ public class SingingActivity extends AppCompatActivity {
                 }
             }
         });
+
+
+        //식물 gif 파일
+        plant_dog=findViewById(R.id.main_plant_dog);
+        ImageViewTarget= new GlideDrawableImageViewTarget(plant_dog);
+        Glide.with(this).load(R.raw.plant_dog).into(plant_dog);
 
 
 
@@ -338,6 +356,17 @@ public class SingingActivity extends AppCompatActivity {
         scoreBar.setX(xPositionOnNote);
 
 
+        // 현재 bar의 위치, 제일 오른쪽으로 가면 다시 제일 왼쪽으로
+        // 여태 그린 픽셀도 초기화
+        if (xPositionOnNote >= xLengthOfParentLayout) {
+            // 위치 초기화
+            xPositionOnNote = 0;
+
+            // 픽셀 모두 삭제
+            bluePixelInitialize();
+        }
+
+
         // y Location 현재 노트 위치에 따라 기록
         yPositionOnNote = yLengthOfParentLayout - currentPitch;
 
@@ -346,23 +375,35 @@ public class SingingActivity extends AppCompatActivity {
 
     }
 
+    private void bluePixelInitialize() {
+
+        for (int i=0; i<bluePixelList.size(); i++) {
+            // 픽셀 안보이게 설정
+            bluePixelList.get(i).setVisibility(View.GONE);
+        }
+
+        // 배열 모든 요소 삭제
+        bluePixelList.clear();
+    }
+
     private void AddNoteOnScore(){
         // 상대 레이아웃 경로 설정
         RelativeLayout rl = (RelativeLayout)findViewById(R.id.note_background);
         // 파란색 픽셀 추가
         ImageView currentLocationPixel = new ImageView(this);
+        // 픽셀 리스트에 추가
+        bluePixelList.add(currentLocationPixel);
         currentLocationPixel.setImageResource(R.drawable.blue_pixel);
         rl.addView(currentLocationPixel);
 
-        // 크기 재설정
-        currentLocationPixel.getLayoutParams().height = 10;
-        currentLocationPixel.getLayoutParams().width = 20;
+        // 픽셀 크기 재설정
+        currentLocationPixel.getLayoutParams().height = 15;
+        currentLocationPixel.getLayoutParams().width = 15;
         currentLocationPixel.requestLayout();
 
         // 픽셀의 위치 설정
         currentLocationPixel.setX(xPositionOnNote);
         currentLocationPixel.setY(yPositionOnNote);
-
 
     }
 
