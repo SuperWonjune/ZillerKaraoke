@@ -1,30 +1,51 @@
 package com.example.user.myapplication;
 
+import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
 import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,13 +62,12 @@ public class SingingActivity extends AppCompatActivity {
     MediaPlayer mp;
     SeekBar seekbar;
     Thread seekbarthread = null;
-    TextView totaltime, currenttime, title, artist;
+    TextView totaltime, currenttime, title, artist,lyric;
     boolean ispaused;
     int position, width;
     ImageView albumArt;
     ImageView playbtn, stopbtn;
-
-    ImageView plant_dog;
+    ImageView plant_dog, note_rainbow1, note_rainbow2;
 
 
     // 음 높이 표시 관련
@@ -95,6 +115,9 @@ public class SingingActivity extends AppCompatActivity {
     private int score_time_duration = 10000;
 
     private Handler handler = new Handler();
+    private Handler handler1 = new Handler();
+    private Handler handler2 = new Handler();
+    private Handler handler3 = new Handler();
     private int timer_fps = 30;
 
     private ImageView scoreBar;
@@ -103,6 +126,14 @@ public class SingingActivity extends AppCompatActivity {
     private List<ImageView> bluePixelList = new ArrayList<>();
 
     GlideDrawableImageViewTarget ImageViewTarget;
+
+
+
+    //--------------------------------------------
+
+    // 가사 출력 관련 변수
+    private StringBuilder lyricString = new StringBuilder();
+
 
     //--------------------------------------------
 
@@ -118,15 +149,15 @@ public class SingingActivity extends AppCompatActivity {
         songs = myApp.getSongList();
         position = intent.getIntExtra("position", 1);
 
-        seekbar = findViewById(R.id.seekBar);
+        seekbar = findViewById(R.id.singing_seekBar);
         currenttime = findViewById(R.id.singing_time_current);
         totaltime = findViewById(R.id.singing_time_total);
         title = findViewById(R.id.singing_title);
         artist = findViewById(R.id.singing_artist);
-        ApplyFonts(this,title);
-        ApplyFonts(this,artist);
-        ApplyFonts(this,currenttime);
-        ApplyFonts(this,totaltime);
+        ApplyFonts(this, title);
+        ApplyFonts(this, artist);
+        ApplyFonts(this, currenttime);
+        ApplyFonts(this, totaltime);
         playbtn = findViewById(R.id.singing_play_button);
         stopbtn = findViewById(R.id.singing_stop_button);
 
@@ -134,13 +165,27 @@ public class SingingActivity extends AppCompatActivity {
         pitchText = findViewById(R.id.pitchText);
         noteText = findViewById(R.id.codeText);
         scoreBar = findViewById(R.id.currentTimeBar);
-        scoreLayout = findViewById(R.id.note_background);
+        scoreLayout = findViewById(R.id.singing_note_background);
+        lyric = findViewById(R.id.singing_lyrics);
+        lyric.setMovementMethod(new ScrollingMovementMethod());
 
+        ApplyFonts(this, lyric);
 
+        //식물 gif 파일
+        plant_dog = findViewById(R.id.main_plant_dog);
+        ImageViewTarget = new GlideDrawableImageViewTarget(plant_dog);
+        Glide.with(this).load(R.raw.dog_satisfied_full).into(plant_dog);
+
+        note_rainbow1 = findViewById(R.id.main_note_rainbow);
+        ImageViewTarget = new GlideDrawableImageViewTarget(note_rainbow1);
+        Glide.with(this).load(R.raw.note_rainbow).into(note_rainbow1);
+
+        note_rainbow2 = findViewById(R.id.main_note_rainbow2);
+        ImageViewTarget = new GlideDrawableImageViewTarget(note_rainbow2);
+        Glide.with(this).load(R.raw.note_rainbow).into(note_rainbow2);
 
 
         // 음악 재생
-
         DisplayMetrics dm = new DisplayMetrics();
         WindowManager wm = (WindowManager) getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
         wm.getDefaultDisplay().getMetrics(dm);
@@ -152,72 +197,60 @@ public class SingingActivity extends AppCompatActivity {
         ispaused = false;
 
         preparesong(position);
-        mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
-            @Override
-            public void onCompletion(MediaPlayer m){
-                if(!mp.isLooping()){
-                    mp.stop();
-                    position = position+1;
-                    if(position==songs.size()){
-                        position = 0;
-                    }
-                    preparesong(position);
-                    ispaused = false;
-                    mp.start();
-                }
 
+        //시작 시 3초 후 자동재생
+        music_play();
+
+        //노래 완곡 시
+        mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer m) {
+                Toast.makeText(getApplicationContext(), "수고했어요!", Toast.LENGTH_LONG).show();
+                Intent intent=new Intent(SingingActivity.this, ResultActivity.class);
+                startActivity(intent);
 
             }
         });
+
         seekbar.setOnSeekBarChangeListener(new SeekBarChangeListener());
 
-        playbtn.setOnClickListener(new View.OnClickListener(){
+        stopbtn.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v){
-                if(mp.isPlaying()){
-                    mp.pause();
-                    ispaused = true;
-                    playbtn.setSelected(false);
-                }
-                else{
-                    ispaused = false;
-                    mp.start();
-                    if(seekbarthread==null){
-                        playbtn.setSelected(true);
-                        Thread seekbarthread = new seekbarThread();
-                        seekbarthread.start();
-                    }
-                }
-            }
-        });
-
-        stopbtn.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                if(mp.isPlaying() || ispaused){
-                    mp.stop();
-                    try{
-                        mp.prepare();
-                    }catch(IllegalStateException e){
-                        e.printStackTrace();
-                    }catch(IOException e){
-                        e.printStackTrace();
-                    }
-                    mp.seekTo(0);
-
-                    playbtn.setSelected(false);
-                }
+            public void onClick(View v) {
+                stop_show();
             }
         });
 
 
-        //식물 gif 파일
-        plant_dog=findViewById(R.id.main_plant_dog);
-        ImageViewTarget= new GlideDrawableImageViewTarget(plant_dog);
-        Glide.with(this).load(R.raw.plant_dog).into(plant_dog);
+        // 2018.1.15 김원준 추가
 
+        // 로컬 파일에서 가사 파일 받아와서 TextView에 표시
 
+        BufferedReader reader = null;
 
+        try {
+            reader = new BufferedReader(
+                    new InputStreamReader(getAssets().open("lyricExample.txt"),"euc-kr"));
+
+            // do reading, usually loop until end of file reading
+            String mLine;
+            while ((mLine = reader.readLine()) != null) {
+                lyricString.append(mLine);
+                lyricString.append('\n');
+            }
+        } catch (IOException e) {
+            Toast.makeText(getApplicationContext(), "Error reading file!", Toast.LENGTH_LONG).show();
+            e.printStackTrace();
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    //log the exception
+                }
+            }
+            lyric.setText((CharSequence) lyricString);
+        }
 
 
         // 2018.1.13 김원준 추가
@@ -269,6 +302,13 @@ public class SingingActivity extends AppCompatActivity {
         });
 
 
+
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        stop_show();
     }
 
     // Pitch 정보를 받아와 현재 음 계산
@@ -277,13 +317,11 @@ public class SingingActivity extends AppCompatActivity {
         // 전역변수에 저장
         currentPitch = pitchInHz;
 
-
         // 몇옥타브인지 계산
         current_Octav = get_Octav(pitchInHz);
 
         float pitchInHz_divided = pitchInHz / (float)Math.pow(2, current_Octav-1);
         String note_code = "";
-
 
         if(pitchInHz_divided >= 65.41 && pitchInHz_divided < 73.42) {
             //C
@@ -388,7 +426,7 @@ public class SingingActivity extends AppCompatActivity {
 
     private void AddNoteOnScore(){
         // 상대 레이아웃 경로 설정
-        RelativeLayout rl = (RelativeLayout)findViewById(R.id.note_background);
+        RelativeLayout rl = (RelativeLayout)findViewById(R.id.singing_note_background);
         // 파란색 픽셀 추가
         ImageView currentLocationPixel = new ImageView(this);
         // 픽셀 리스트에 추가
@@ -483,7 +521,7 @@ public class SingingActivity extends AppCompatActivity {
             }
         }
     }
-
+    //노래 시작 시간 계산
     public String strtime(int duration){
         int min = (int) Math.floor(duration/(1000*60));
         int sec = (int) Math.floor((duration-min*1000*60)/1000);
@@ -497,6 +535,127 @@ public class SingingActivity extends AppCompatActivity {
     public static void ApplyFonts(Context ct, TextView tv){
         Typeface face=Typeface.createFromAsset(ct.getAssets(),"fonts/BMHANNA_11yrs_ttf.mp3");
         tv.setTypeface(face);
+    }
+    //정지 시 정지 및 알림창 띄우기
+    void stop_show(){
+        if(mp.isPlaying() || ispaused){
+            mp.stop();
+            try{
+                mp.prepare();
+            }catch(IllegalStateException e){
+                e.printStackTrace();
+            }catch(IOException e){
+                e.printStackTrace();
+            }
+            mp.seekTo(0);
+
+            playbtn.setSelected(false);
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("경고!!");
+        builder.setMessage("정지 할 시, 식물이 아파해요! 그래도 나갈래요?");
+        builder.setNegativeButton("계속 부를래요",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        Toast.makeText(getApplicationContext(),"잘 생각했어요!",Toast.LENGTH_LONG).show();
+
+                    }
+                });
+        builder.setPositiveButton("그만할래요",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        Intent intent=new Intent(SingingActivity.this, ResultActivity.class);
+                        startActivity(intent);
+                        Toast.makeText(getApplicationContext(),"너무해요!",Toast.LENGTH_LONG).show();
+
+                    }
+                });
+        builder.show();
+
+    }
+    //시작 시 3초 후 노래 자동재생
+    void music_play() {
+        ImageView count=(ImageView) findViewById(R.id.singing_num1);
+        final ImageView count2=(ImageView) findViewById(R.id.singing_num2);
+        final ImageView count3=(ImageView) findViewById(R.id.singing_num3);
+        final Animation move= AnimationUtils.loadAnimation(this,R.anim.bigtosmall);
+        final Animation move2= AnimationUtils.loadAnimation(this,R.anim.bigtosmall);
+        final Animation move3= AnimationUtils.loadAnimation(this,R.anim.bigtosmall);
+        count.setAnimation(move);
+
+        handler1.postDelayed(new Runnable(){
+            @Override
+            public void run() {
+                //handler1.removeCallbacksAndMessages(null);
+                handler1.removeCallbacks(this);
+                count2.setAnimation(move2);
+            }
+        },1000);
+
+        handler2.postDelayed(new Runnable(){
+            @Override
+            public void run() {
+                handler2.removeCallbacks(this);
+                count3.setAnimation(move3);
+            }
+        },2000);
+
+
+
+        //count.setImageResource(R.drawable.anim);
+        Handler handler = new Handler() {
+            public void handleMessage(Message msg) {
+                super.handleMessage(msg);
+                ispaused = false;
+                mp.start();
+                if (seekbarthread == null) {
+                    playbtn.setSelected(true);
+                    Thread seekbarthread = new seekbarThread();
+                    seekbarthread.start();
+                }
+            }
+        };
+        handler.sendEmptyMessageDelayed(0,3000);
+    }
+    //노래 끝날 시 다음 곡 자동 재생
+    void music_play_next(){
+        mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
+            @Override
+            public void onCompletion(MediaPlayer m){
+                if(!mp.isLooping()){
+                    mp.stop();
+                    position = position+1;
+                    if(position==songs.size()){
+                        position = 0;
+                    }
+                    preparesong(position);
+                    ispaused = false;
+                    mp.start();
+                }
+            }
+        });
+    }
+    //실행 버튼 누를 시 노래 시작
+    void music_play_button(){
+        playbtn.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                if(mp.isPlaying()){
+                    mp.pause();
+                    ispaused = true;
+                    playbtn.setSelected(false);
+                }
+                else{
+                    ispaused = false;
+                    mp.start();
+                    if(seekbarthread==null){
+                        playbtn.setSelected(true);
+                        Thread seekbarthread = new seekbarThread();
+                        seekbarthread.start();
+                    }
+                }
+            }
+        });
     }
 
 }

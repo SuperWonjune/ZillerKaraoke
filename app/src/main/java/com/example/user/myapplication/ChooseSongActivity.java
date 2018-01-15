@@ -28,6 +28,7 @@ public class ChooseSongActivity extends AppCompatActivity {
     ArrayList<SongListViewItem> SongList;
     ListView listview;
     TextView activity_title;
+    ImageView back_button;
 
     public void onListBtnClick(int position) {
 
@@ -96,6 +97,7 @@ public class ChooseSongActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_choose_song);
 
+        back_button=(ImageView)findViewById(R.id.choose_song_back_button);
         activity_title=(TextView)findViewById(R.id.choose_song_title);
         ApplyFonts(this,activity_title);
 
@@ -112,6 +114,13 @@ public class ChooseSongActivity extends AppCompatActivity {
                 String path = s.data;
                 Intent intent = new Intent(ChooseSongActivity.this, SingingActivity.class);
                 intent.putExtra("position", position);
+                startActivity(intent);
+            }
+        });
+        back_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent=new Intent(ChooseSongActivity.this,MainActivity.class);
                 startActivity(intent);
             }
         });

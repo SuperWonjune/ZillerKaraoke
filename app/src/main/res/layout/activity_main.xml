@@ -9,23 +9,59 @@
     android:background="@drawable/main_background2">
 
 
-    <ImageView
-        android:id="@+id/main_plant_dog"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
+    <RelativeLayout
+        android:id="@+id/main_speech_bubble"
+        android:layout_width="170dp"
+        android:layout_height="170dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="19dp"
+        android:layout_marginStart="19dp"
+        android:layout_marginTop="132dp">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:src="@drawable/main_speech_bubble" />
+
+        <TextView
+            android:id="@+id/main_speech_text"
+            android:layout_width="130dp"
+            android:layout_height="60dp"
+            android:layout_centerInParent="true"
+            android:gravity="center"
+            android:text="반가워요"
+            android:textSize="20dp" />
+
+    </RelativeLayout>
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="132dp" />
-
+        android:layout_marginBottom="132dp"
+        android:id="@+id/main_plant_dog_layout">
+        <ImageView
+            android:id="@+id/main_plant_dog"
+            android:layout_width="230dp"
+            android:layout_height="230dp" />
+    </RelativeLayout>
     <ImageView
         android:id="@+id/main_song_list"
-        android:layout_width="100dp"
-        android:layout_height="70dp"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:src="@drawable/note"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
-        android:src="@drawable/note_button"
+        android:layout_marginRight="10dp"
+        android:layout_marginBottom="10dp"
         />
+
+
 
 
 

@@ -49,8 +49,6 @@ public class LoadingActivity extends Activity {
 
 
 
-
-
         // 권한 확인
         checkPermissions();
 

@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">ZillerKaraoke</string>
+    <string name="app_name">질러노래방</string>
+    <string name="carregando">Carregando...</string>
+    <string name="action_settings">Settings</string>
 </resources>
