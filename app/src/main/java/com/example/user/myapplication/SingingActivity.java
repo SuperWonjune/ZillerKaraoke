@@ -8,9 +8,14 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Typeface;
+import android.media.AudioFormat;
 import android.media.AudioManager;
+import android.media.AudioRecord;
 import android.media.MediaPlayer;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -39,6 +44,7 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -46,6 +52,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.nio.channels.Channel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -74,6 +82,8 @@ public class SingingActivity extends AppCompatActivity {
     TextView pitchText;
     TextView noteText;
 
+    Thread audioThread = null;
+    PitchDetectionHandler pdh = null;
     // 음성 input 계산 관련
     //
 
@@ -94,6 +104,12 @@ public class SingingActivity extends AppCompatActivity {
 
     //--------------------------------------------
     // 악보 기록 관련
+
+    int changeSwitch = 1;
+
+    // 현재 부르고 있는 음의 코드의 알파벳, 숫자 저장
+    private String currentCodeAlphabet ="";
+    private int currentCodeNumber;
 
 
     // 현재 녹음되고 있는 음의 높이
@@ -124,6 +140,7 @@ public class SingingActivity extends AppCompatActivity {
     private RelativeLayout scoreLayout;
 
     private List<ImageView> bluePixelList = new ArrayList<>();
+    private List<ImageView> redPixelList = new ArrayList<>();
 
     GlideDrawableImageViewTarget ImageViewTarget;
 
@@ -136,6 +153,26 @@ public class SingingActivity extends AppCompatActivity {
 
 
     //--------------------------------------------
+
+    //--------------------------------------------
+    //  음 높낮이 매칭 관련
+    TextView correctText;
+
+    JSONObject JSON_NOTES;
+    String JSON_Notes_String = "";
+
+    JSONArray JSON_NotesArray;
+
+
+    int start_sec = 0;
+    int end_sec = 10;
+    int JSON_read_index = 0;
+
+    float yPositionOfGuideOnNote = 0;
+
+
+
+
 
 
     @Override
@@ -170,6 +207,7 @@ public class SingingActivity extends AppCompatActivity {
         scoreLayout = findViewById(R.id.singing_note_background);
         lyric = findViewById(R.id.singing_lyrics);
         lyric.setMovementMethod(new ScrollingMovementMethod());
+        correctText = findViewById(R.id.correctText);
 
         ApplyFonts(this, lyric);
 
@@ -255,31 +293,6 @@ public class SingingActivity extends AppCompatActivity {
         }
 
 
-        // 2018.1.13 김원준 추가
-
-        // 목소리 인식 라이브러리 추가
-        AudioDispatcher dispatcher =
-                AudioDispatcherFactory.fromDefaultMicrophone(22050,1024,0);
-
-        PitchDetectionHandler pdh = new PitchDetectionHandler() {
-            @Override
-            public void handlePitch(PitchDetectionResult res, AudioEvent e){
-                final float pitchInHz = res.getPitch();
-                runOnUiThread(new Runnable() {
-
-                    // 현재 음 높이에 따른 악보 추가
-                    @Override
-                    public void run() {
-                        processPitch(pitchInHz);
-                    }
-                });
-            }
-        };
-        AudioProcessor pitchProcessor = new PitchProcessor(PitchProcessor.PitchEstimationAlgorithm.FFT_YIN, 22050, 1024, pdh);
-        dispatcher.addAudioProcessor(pitchProcessor);
-
-        Thread audioThread = new Thread(dispatcher, "Audio Thread");
-        audioThread.start();
 
 
         // process bar 움직임을 위한 layout 길이의 측정
@@ -298,19 +311,95 @@ public class SingingActivity extends AppCompatActivity {
                 // 한번이동할때의 x 간격
                 xLengthInterval = xLengthOfParentLayout / (( timer_fps) * (score_time_duration/1000));
 
-                // 악보 녹음 등록
-                handler.postDelayed(recordOnScore, 1000);
             }
         });
 
 
+        // JSON note 파일 로드
+        JSON_Notes_String = loadJSONFromAsset("heartbreaker.json");
 
+        // 로드된 파일로 JSONObject 생성
+        try {
+            JSON_NOTES = new JSONObject(JSON_Notes_String);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        // JSON_ARRAY에 파일 값 대입
+        try {
+            JSON_NotesArray = JSON_NOTES.getJSONArray("notes");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    private void startNoteExamination() throws JSONException {
+
+        // 3초 카운트 후 시작되는 것들
+
+        // 1. 목소리 인식 라이브러리 로드 및 초기화
+        // 목소리 인식 라이브러리 추가
+
+
+        AudioDispatcher dispatcher =
+                AudioDispatcherFactory.fromDefaultMicrophone(22050,1024,0);
+
+
+
+        pdh = new PitchDetectionHandler() {
+            @Override
+            public void handlePitch(PitchDetectionResult res, AudioEvent e){
+                final float pitchInHz = res.getPitch();
+                runOnUiThread(new Runnable() {
+
+                    // 현재 음 높이에 따른 악보 추가
+                    @Override
+                    public void run() {
+                        processPitch(pitchInHz);
+                    }
+                });
+            }
+        };
+        AudioProcessor pitchProcessor = new PitchProcessor(PitchProcessor.PitchEstimationAlgorithm.FFT_YIN, 22050, 1024, pdh);
+        dispatcher.addAudioProcessor(pitchProcessor);
+
+        audioThread = new Thread(dispatcher, "Audio Thread");
+        audioThread.start();
+
+
+        // 2. current 상태 바 이동 및 voice input의 높낮이 표시
+
+        // handler로 화면상의 process bar 지속 이동 구현
+        Runnable recordOnScore = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    recordInputOnScore();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                // 함수 timer 딜레이
+                handler.postDelayed(this,1000 / timer_fps);
+            }
+        };
+
+        // 악보 녹음 등록
+        handler.postDelayed(recordOnScore, 0);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+
+        // 음악 재생 멈추기
         stop_show();
+
+        // 음성 인식 handler 종료
+        //pdh.removeCallbacks(r);
+
     }
 
     // Pitch 정보를 받아와 현재 음 계산
@@ -361,6 +450,10 @@ public class SingingActivity extends AppCompatActivity {
 
         noteText.setText(note_code + display_Octav);
 
+        // 현재 녹음되고 있는 코드 저장
+        currentCodeAlphabet = note_code;
+        currentCodeNumber = display_Octav;
+
     }
 
     // 음의 옥타브를 계산
@@ -377,43 +470,241 @@ public class SingingActivity extends AppCompatActivity {
     }
 
 
-    // handler로 화면상의 process bar 지속 이동 구현
-    private Runnable recordOnScore = new Runnable() {
-        @Override
-        public void run() {
-            recordInputOnScore();
-
-            // 함수 timer 딜레이
-            handler.postDelayed(this,1000 / timer_fps);
-        }
-    };
-
     // Handler 타이머의 호출에 따라 일정시간동안 호출
-    private void recordInputOnScore() {
+    private void recordInputOnScore() throws JSONException {
 
-        // progress bar 계속해서 오른쪽으로 이동시킴
-        xPositionOnNote = xPositionOnNote + xLengthInterval;
+        float multipliedLength = xLengthOfParentLayout / 10;
+
+        // progress bar 재생 시간에 맞게 이동시킴
+        xPositionOnNote =  ((float)( mp.getCurrentPosition() % 10000) / 1000f) * multipliedLength;
         scoreBar.setX(xPositionOnNote);
 
+        // 테스트
+        //correctText.setText("" + mp.getCurrentPosition());
+
+
+        // 초기화 스위치
+
+        if (xPositionOnNote >= xLengthOfParentLayout - 10) {
+            changeSwitch = 1;
+        }
 
         // 현재 bar의 위치, 제일 오른쪽으로 가면 다시 제일 왼쪽으로
         // 여태 그린 픽셀도 초기화
-        if (xPositionOnNote >= xLengthOfParentLayout) {
-            // 위치 초기화
-            xPositionOnNote = 0;
-
+        // 보컬 가이드 붉은색 노트도 다시 그리기
+        if (xPositionOnNote <= 50 && changeSwitch == 1) {
             // 픽셀 모두 삭제
             bluePixelInitialize();
+            drawGuideNotesOnScore();
+            changeSwitch = 0;
         }
 
 
         // y Location 현재 노트 위치에 따라 기록
-        yPositionOnNote = yLengthOfParentLayout - currentPitch;
+        // C2~ B7 까지의 간격을 바탕으로 코드 계산
+        // 총 41칸
+        float gapBetweenNotes = yLengthOfParentLayout / 41;
+        int notesTransformed = 7 * (currentCodeNumber-2) + getElevationByAlphabet(currentCodeAlphabet);
+
+        yPositionOnNote = yLengthOfParentLayout - (gapBetweenNotes * notesTransformed);
 
         // progress bar 위치에 노트 기록
         AddNoteOnScore();
 
+
+
     }
+
+
+    // 빨간색 픽셀 추가
+    // 처음 그리고 10초마다 호출, JSON Array에서 데이터를 받아들여서 보컬 가이드를 그려줌
+    private void drawGuideNotesOnScore() throws JSONException {
+
+        // 이전에 있던 붉은 픽셀들 초기화
+        for (int i=0; i<redPixelList.size(); i++) {
+            // 픽셀 안보이게 설정
+            redPixelList.get(i).setVisibility(View.GONE);
+        }
+
+        // 배열 모든 요소 삭제
+        redPixelList.clear();
+
+
+        // 쓰이는 관련 변수
+        /*
+        int start_sec = 0;
+        int end_sec = 10;
+        int JSON_read_index = 0;
+         */
+
+        // 새로운 JSONObject의 리스트 생성
+        // 현 10초 구간 내의 JSON Object들만 갖고 있음
+        ArrayList<JSONObject> tempJSON_Array = new ArrayList<>();
+        int tempJSON_Array_Index = 0;
+
+        double startDrawPoint = 0;
+        double endDrawPoint = 0;
+
+
+        // 10초 간격의 구간안의 note를 돈다.
+        while ( BigDecimal.valueOf(JSON_NotesArray.getJSONObject(JSON_read_index).getDouble("time")).floatValue() / 1000000 < end_sec ) {
+
+            // 새로 만든 리스트에 10초 구간 안의 JSON_Array만 넣어둠.
+            tempJSON_Array.add(JSON_NotesArray.getJSONObject(JSON_read_index));
+
+            JSON_read_index++;
+        }
+
+        // 이제 tempJSON_Array엔 10초 안에 그릴 모든 데이터가 담겨있음.
+        // 첫번째가 OFF 일 경우 따로 관리
+        if (tempJSON_Array.get(tempJSON_Array_Index).getString("event").equals("OFF")) {
+
+            // 0에서 OFF time까지 계속해서 draw
+            JSONObject readJSON = tempJSON_Array.get(tempJSON_Array_Index);
+            drawRedLineBetweenPoints(0, readJSON.getDouble("time"), readJSON.getInt("key"));
+
+            // 그 다음부터 읽게 index 하나 더하기
+            tempJSON_Array_Index++;
+        }
+
+        while (tempJSON_Array_Index < tempJSON_Array.size()) {
+
+            JSONObject readJSON = tempJSON_Array.get(tempJSON_Array_Index);
+
+            // ON을 읽었을 경우
+            if (readJSON.getString("event").equals("ON")) {
+                // 드로잉 시작점 설정
+                startDrawPoint = readJSON.getDouble("time");
+            }
+            // OFF를 읽었을 경우
+            else {
+                // 드로잉 끝점 설정
+                endDrawPoint = readJSON.getDouble("time");
+
+                // 시작점, 끝점으로 그리기
+                drawRedLineBetweenPoints(startDrawPoint, endDrawPoint, readJSON.getInt("key"));
+            }
+
+            tempJSON_Array_Index++;
+        }
+
+        // 마지막, 다음 참조를 위한 index 추가
+        //JSON_read_index++;
+        start_sec += 10;
+        end_sec += 10;
+
+    }
+
+    private void drawRedLineBetweenPoints(double startPoint, double endPoint, int key) {
+
+        int changedKey = key-12;
+        float yPositionGuideNote;
+
+        // startPoint, Endpoint는 마이크로세컨드 단위로 받아옴
+
+        //xLengthOfParentLayout;
+        //yLengthOfParentLayout;
+
+
+        // 받아온 key를 바탕으로 note 높낮이 계산
+        int codeNumberOfKey = changedKey / 12;
+        String codeAlphabetOfKey;
+
+        int remnant = changedKey % 12;
+
+        if (0 <= remnant && remnant <= 1) {
+            codeAlphabetOfKey = "C";
+        } else if ( 2 <= remnant && remnant <= 3) {
+            codeAlphabetOfKey = "D";
+        } else if ( remnant == 4) {
+            codeAlphabetOfKey = "E";
+        } else if ( 5 <= remnant && remnant <= 6 ) {
+            codeAlphabetOfKey = "F";
+        } else if ( 7 <= remnant && remnant <= 8) {
+            codeAlphabetOfKey = "G";
+        } else if ( 9 <= remnant && remnant <= 10) {
+            codeAlphabetOfKey = "A";
+        } else {
+            codeAlphabetOfKey = "B";
+        }
+
+
+
+
+
+        float gapBetweenNotes = yLengthOfParentLayout / 41;
+        int notesTransformed = 7 * (codeNumberOfKey-2) + getElevationByAlphabet(codeAlphabetOfKey);
+
+        yPositionGuideNote = yLengthOfParentLayout - (gapBetweenNotes * notesTransformed);
+        // y좌표 계산 완료
+
+
+        // start, endpoint를 10으로 나눔
+
+
+
+        double xPositionGuideNoteStart = (xLengthOfParentLayout * ( (( startPoint / 1000000 ) - start_sec) / 10));
+        double xPositionGuideNoteEnd = (xLengthOfParentLayout * ( (( endPoint / 1000000 ) - start_sec) / 10));
+
+        // 그리기 시작
+        double currentXPositionGuide = xPositionGuideNoteStart;
+
+        while (currentXPositionGuide < xPositionGuideNoteEnd) {
+            // 상대 레이아웃 경로 설정
+            RelativeLayout rl = (RelativeLayout)findViewById(R.id.singing_note_background);
+            // 빨간색 픽셀 추가
+            ImageView guideLocationPixel = new ImageView(this);
+            // 픽셀 리스트에 추가
+            guideLocationPixel.setImageResource(R.drawable.red_pixel);
+            rl.addView(guideLocationPixel);
+            redPixelList.add(guideLocationPixel);
+
+            // 픽셀 크기 재설정
+            guideLocationPixel.getLayoutParams().height = 25;
+            guideLocationPixel.getLayoutParams().width = 25;
+            guideLocationPixel.requestLayout();
+
+            // 픽셀의 위치 설정
+            guideLocationPixel.setX((float)currentXPositionGuide);
+            guideLocationPixel.setY(yPositionGuideNote);
+
+            currentXPositionGuide += 20;
+        }
+
+    }
+
+
+    private int getElevationByAlphabet(String inputAlphabet) {
+        int retValue = 0;
+        switch(inputAlphabet) {
+            case "C":
+                retValue = 0;
+                break;
+            case "D":
+                retValue = 1;
+                break;
+            case "E":
+                retValue = 2;
+                break;
+            case "F":
+                retValue = 3;
+                break;
+            case "G":
+                retValue = 4;
+                break;
+            case "A":
+                retValue = 5;
+                break;
+            case "B":
+                retValue = 6;
+                break;
+            default:
+                break;
+        }
+
+        return retValue;
+    }
+
 
     private void bluePixelInitialize() {
 
@@ -445,6 +736,9 @@ public class SingingActivity extends AppCompatActivity {
         currentLocationPixel.setX(xPositionOnNote);
         currentLocationPixel.setY(yPositionOnNote);
 
+
+
+
     }
 
 
@@ -452,8 +746,39 @@ public class SingingActivity extends AppCompatActivity {
     //handler.removeCallback(runnable)
 
 
+    // 2018.1.16 점수 계산
+
+    // 현재 pitch가 맞고 있는지 1, 0으로 표시
+    //correctText;
+
+    //JSON 파일 로드
+    public String loadJSONFromAsset(String JSON_FileNameInput) {
+        String json = null;
+        try {
+            InputStream is = this.getAssets().open(JSON_FileNameInput);
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            is.read(buffer);
+            is.close();
+            json = new String(buffer, "UTF-8");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            return null;
+        }
+        return json;
+    }
+
+
+
+
+
+
+
+
+
+
+
     // 김원준 추가 함수 종료
-    // 나머진 너희들에게 맡긴다
 
 
 
@@ -608,6 +933,15 @@ public class SingingActivity extends AppCompatActivity {
             public void run(){
                 handler3.removeCallbacks(this);
                 count_layout.setVisibility(View.INVISIBLE);
+
+
+                // start things here
+                try {
+                    startNoteExamination();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
             }
         },3000);
 
