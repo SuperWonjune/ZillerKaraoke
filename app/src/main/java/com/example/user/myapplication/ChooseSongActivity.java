@@ -29,6 +29,7 @@ public class ChooseSongActivity extends AppCompatActivity {
     ListView listview;
     TextView activity_title;
     ImageView back_button;
+    int heart_num;
 
     public void onListBtnClick(int position) {
 
@@ -97,6 +98,11 @@ public class ChooseSongActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_choose_song);
 
+        //main에서 loading으로 가면서 heart_num값 전달
+        Intent intent=getIntent();
+        heart_num = intent.getIntExtra("heart_num", heart_num);
+
+
         back_button=(ImageView)findViewById(R.id.choose_song_back_button);
         activity_title=(TextView)findViewById(R.id.choose_song_title);
         ApplyFonts(this,activity_title);
@@ -114,6 +120,7 @@ public class ChooseSongActivity extends AppCompatActivity {
                 String path = s.data;
                 Intent intent = new Intent(ChooseSongActivity.this, SingingActivity.class);
                 intent.putExtra("position", position);
+                intent.putExtra("heart_num",heart_num);
                 startActivity(intent);
             }
         });
@@ -121,6 +128,7 @@ public class ChooseSongActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent intent=new Intent(ChooseSongActivity.this,MainActivity.class);
+                intent.putExtra("heart_num",heart_num);
                 startActivity(intent);
             }
         });

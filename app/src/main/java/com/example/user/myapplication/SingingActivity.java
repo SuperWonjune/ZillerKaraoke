@@ -68,7 +68,7 @@ public class SingingActivity extends AppCompatActivity {
     ImageView albumArt;
     ImageView playbtn, stopbtn;
     ImageView plant_dog, note_rainbow1, note_rainbow2;
-
+    int heart_num;
 
     // 음 높이 표시 관련
     TextView pitchText;
@@ -143,6 +143,8 @@ public class SingingActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_singing);
         Intent intent = getIntent();
+        heart_num=intent.getIntExtra("heart_num",heart_num);
+       // heart_show(heart_num);
 
         MyApplication myApp = new MyApplication(this);
         myApp.loadData();
@@ -176,13 +178,13 @@ public class SingingActivity extends AppCompatActivity {
         ImageViewTarget = new GlideDrawableImageViewTarget(plant_dog);
         Glide.with(this).load(R.raw.dog_satisfied_full).into(plant_dog);
 
-        note_rainbow1 = findViewById(R.id.main_note_rainbow);
-        ImageViewTarget = new GlideDrawableImageViewTarget(note_rainbow1);
-        Glide.with(this).load(R.raw.note_rainbow).into(note_rainbow1);
-
-        note_rainbow2 = findViewById(R.id.main_note_rainbow2);
-        ImageViewTarget = new GlideDrawableImageViewTarget(note_rainbow2);
-        Glide.with(this).load(R.raw.note_rainbow).into(note_rainbow2);
+//        note_rainbow1 = findViewById(R.id.main_note_rainbow);
+//        ImageViewTarget = new GlideDrawableImageViewTarget(note_rainbow1);
+//        Glide.with(this).load(R.raw.note_rainbow).into(note_rainbow1);
+//
+//        note_rainbow2 = findViewById(R.id.main_note_rainbow2);
+//        ImageViewTarget = new GlideDrawableImageViewTarget(note_rainbow2);
+//        Glide.with(this).load(R.raw.note_rainbow).into(note_rainbow2);
 
 
         // 음악 재생
@@ -553,7 +555,8 @@ public class SingingActivity extends AppCompatActivity {
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("경고!!");
-        builder.setMessage("정지 할 시, 식물이 아파해요! 그래도 나갈래요?");
+        builder.setMessage("정지 할 시, 하트가 하나 소진돼요! " +
+                "그래도 나갈래요?");
         builder.setNegativeButton("계속 부를래요",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
@@ -565,9 +568,10 @@ public class SingingActivity extends AppCompatActivity {
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
                         Intent intent=new Intent(SingingActivity.this, ResultActivity.class);
+                        heart_num--;
+                        intent.putExtra("heart_num",heart_num);
                         startActivity(intent);
                         Toast.makeText(getApplicationContext(),"너무해요!",Toast.LENGTH_LONG).show();
-
                     }
                 });
         builder.show();
@@ -575,13 +579,14 @@ public class SingingActivity extends AppCompatActivity {
     }
     //시작 시 3초 후 노래 자동재생
     void music_play() {
-        ImageView count=(ImageView) findViewById(R.id.singing_num1);
+        final RelativeLayout count_layout=findViewById(R.id.singing_count_layout);
+        final ImageView count1=(ImageView) findViewById(R.id.singing_num1);
         final ImageView count2=(ImageView) findViewById(R.id.singing_num2);
         final ImageView count3=(ImageView) findViewById(R.id.singing_num3);
         final Animation move= AnimationUtils.loadAnimation(this,R.anim.bigtosmall);
         final Animation move2= AnimationUtils.loadAnimation(this,R.anim.bigtosmall);
         final Animation move3= AnimationUtils.loadAnimation(this,R.anim.bigtosmall);
-        count.setAnimation(move);
+        count3.setAnimation(move);
 
         handler1.postDelayed(new Runnable(){
             @Override
@@ -596,10 +601,15 @@ public class SingingActivity extends AppCompatActivity {
             @Override
             public void run() {
                 handler2.removeCallbacks(this);
-                count3.setAnimation(move3);
+                count1.setAnimation(move3);
             }
         },2000);
-
+        handler3.postDelayed(new Runnable(){
+            public void run(){
+                handler3.removeCallbacks(this);
+                count_layout.setVisibility(View.INVISIBLE);
+            }
+        },3000);
 
 
         //count.setImageResource(R.drawable.anim);
