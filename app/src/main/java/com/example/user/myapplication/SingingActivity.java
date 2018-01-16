@@ -76,7 +76,7 @@ public class SingingActivity extends AppCompatActivity {
     ImageView albumArt;
     ImageView playbtn, stopbtn;
     ImageView plant_dog, note_rainbow1, note_rainbow2;
-    int heart_num;
+    int heart_num,score=99;
 
     // 음 높이 표시 관련
     TextView pitchText;
@@ -247,6 +247,8 @@ public class SingingActivity extends AppCompatActivity {
             public void onCompletion(MediaPlayer m) {
                 Toast.makeText(getApplicationContext(), "수고했어요!", Toast.LENGTH_LONG).show();
                 Intent intent=new Intent(SingingActivity.this, ResultActivity.class);
+                intent.putExtra("heart_num",heart_num);
+                intent.putExtra("score",score);
                 startActivity(intent);
 
             }
@@ -895,6 +897,7 @@ public class SingingActivity extends AppCompatActivity {
                         Intent intent=new Intent(SingingActivity.this, ResultActivity.class);
                         heart_num--;
                         intent.putExtra("heart_num",heart_num);
+                        intent.putExtra("score",score);
                         startActivity(intent);
                         Toast.makeText(getApplicationContext(),"너무해요!",Toast.LENGTH_LONG).show();
                     }

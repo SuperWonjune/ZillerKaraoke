@@ -35,6 +35,7 @@ public class ResultActivity extends AppCompatActivity {
         //SingingActivity로부터 하트 개수 가져오고 보이기
         Intent intent=getIntent();
         heart_num=intent.getIntExtra("heart_num",heart_num);
+        score=intent.getIntExtra("score",score);
         Log.v("heart_num",String.valueOf(heart_num));
         heart_show(heart_num);
 
