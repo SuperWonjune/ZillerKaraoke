@@ -22,8 +22,8 @@
         <!--android:layout_height="50dp"-->
         <!--android:layout_alignTop="@+id/main_plant_dog"-->
         <!--android:layout_marginTop="15dp"-->
-        <!--android:layout_toEndOf="@+id/singing_num1"-->
-        <!--android:layout_toRightOf="@+id/singing_num1" />-->
+        <!--android:layout_toEndOf="@num1num1"-->
+        <!--android:layout_toRightOf="@num1num1" />-->
 
     <!--<ImageView-->
         <!--android:id="@+id/main_note_rainbow2"-->
@@ -176,7 +176,7 @@
                 android:layout_gravity="center">
                 <TextView
                     android:id="@+id/singing_title"
-                    android:textSize="30dp"
+                    android:textSize="20dp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Title"
@@ -192,7 +192,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Artist"
-                    android:textSize="20dp"
+                    android:textSize="15dp"
                     android:textColor="@color/white"/>
 
             </LinearLayout>
@@ -243,7 +243,7 @@
                 android:textColor="@color/white"/>
             <SeekBar
                 android:id="@+id/singing_seekBar"
-                android:layout_width="300dp"
+                android:layout_width="270dp"
                 android:layout_height="wrap_content" />
             <TextView
                 android:id="@+id/singing_time_total"
@@ -268,7 +268,7 @@
         android:layout_height="100dp"
         android:layout_centerInParent="true"
         android:id="@+id/singing_num1"
-        android:src="@drawable/singing_num1"
+        android:src="@drawable/num1"
         android:visibility="invisible"
         />
     <ImageView
@@ -276,7 +276,7 @@
         android:layout_height="100dp"
         android:layout_centerInParent="true"
         android:id="@+id/singing_num2"
-        android:src="@drawable/singing_num2"
+        android:src="@drawable/num2"
         android:visibility="invisible"
         />
     <ImageView
@@ -284,7 +284,7 @@
         android:layout_height="100dp"
         android:layout_centerInParent="true"
         android:id="@+id/singing_num3"
-        android:src="@drawable/singing_num3"
+        android:src="@drawable/num3"
         android:visibility="invisible"
         />
 </RelativeLayout>

@@ -12,7 +12,6 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
@@ -37,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
 
         //식물 gif 파일
         ImageViewTarget= new GlideDrawableImageViewTarget(plant_dog);
-        Glide.with(this).load(R.raw.don_normal_really_final).into(plant_dog);
+        Glide.with(this).load(R.raw.dog_normal_full).into(plant_dog);
         layout=findViewById(R.id.main_plant_dog_layout);
 
         //식물 눌렀을 때 random 으로 말들 가져오기
@@ -88,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
     //식물 눌렀을 때 메세지 변화
     void random_toast(){
         Random random=new Random();
-        int num=random.nextInt(9);
+        int num=random.nextInt(10);
         String speech[]={"밥 주세요","노래불러줘요","음치가 아니길 바래요","제 이름은 뭔가요","학식 그만 먹고 싶어요",
                             "어은동 기기","링딩동링딩동링디리디리딩딩딩","매드캠프가 벌써 끝나가요","앙원준띠~","술마시러가요"};
 

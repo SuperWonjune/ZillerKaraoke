@@ -34,7 +34,18 @@
         android:layout_alignEnd="@+id/result_relativelayout"
         android:layout_alignRight="@+id/result_relativelayout"
         android:src="@drawable/result_restart_button" />
-
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginLeft="10dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_below="@+id/result_title"
+        android:layout_marginTop="15dp"
+        android:background="@drawable/main_background2"/>
     <RelativeLayout
         android:id="@+id/result_relativelayout"
         android:layout_width="match_parent"
@@ -47,7 +58,8 @@
         android:layout_marginRight="10dp"
         android:layout_below="@+id/result_title"
         android:layout_marginTop="15dp"
-        android:background="@color/white"
+        android:background="#99000000"
+
         >
         <LinearLayout
             android:layout_width="match_parent"
@@ -92,12 +104,14 @@
             android:src="@drawable/result_heart" />
 
         <ImageView
-            android:id="@+id/main_plant_dog"
+            android:id="@+id/result_plant_dog"
             android:layout_width="230dp"
             android:layout_height="230dp"
-            android:layout_above="@+id/linearLayout3"
+            android:layout_above="@+id/result_score_second_digit"
             android:layout_centerHorizontal="true"
-            android:layout_marginBottom="17dp" />
+            android:layout_marginBottom="21dp" />
+
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="40dp"
@@ -106,6 +120,40 @@
             android:layout_alignParentRight="true"
             android:background="@color/transparent_pink"
             android:id="@+id/linearLayout3" />
+
+        <ImageView
+            android:id="@+id/result_score_second_digit"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_alignEnd="@+id/result_heart3"
+            android:layout_alignParentBottom="true"
+            android:layout_alignRight="@+id/result_heart3"
+            android:layout_marginBottom="16dp"
+            android:visibility="invisible"
+            android:src="@drawable/num1" />
+
+        <ImageView
+            android:id="@+id/result_score_first_digit"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:visibility="invisible"
+            android:layout_alignEnd="@+id/result_plant_dog"
+            android:layout_alignRight="@+id/result_plant_dog"
+            android:layout_below="@+id/result_plant_dog"
+            android:layout_marginEnd="38dp"
+            android:layout_marginRight="38dp"
+            android:src="@drawable/num2" />
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="80dp"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="14dp"
+            android:id="@+id/result_score_100"
+            android:src="@drawable/num100"
+            android:visibility="invisible"/>
+
 
     </RelativeLayout>
 
