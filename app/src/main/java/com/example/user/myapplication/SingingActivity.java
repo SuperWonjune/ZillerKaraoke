@@ -79,7 +79,7 @@ public class SingingActivity extends AppCompatActivity {
     int position, width;
     ImageView albumArt;
     ImageView playbtn, stopbtn;
-    ImageView plant_dog, note_rainbow1, note_rainbow2;
+    ImageView plant_dog;
     int heart_num,score=99;
 
     // 음 높이 표시 관련
@@ -238,6 +238,10 @@ public class SingingActivity extends AppCompatActivity {
 //        Glide.with(this).load(R.raw.note_rainbow).into(note_rainbow2);
 
 
+
+
+
+
         // 음악 재생
         DisplayMetrics dm = new DisplayMetrics();
         WindowManager wm = (WindowManager) getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
@@ -306,6 +310,11 @@ public class SingingActivity extends AppCompatActivity {
                 }
             }
             lyric.setText((CharSequence) lyricString);
+        }
+
+        if (songName.equals("farewell") ) {
+            // 노래에 맞춘 KeyDown
+            keyDown = 24;
         }
 
 
@@ -678,17 +687,57 @@ public class SingingActivity extends AppCompatActivity {
         desiredText.setText("" + score);
     }
 
+    int dog_current_state = 0;
+    int dog_previous_state=-1;
     private void addScore(int inputScore) {
         score += inputScore;
         if (score <= 0) {
             score = 0;
         }
-        if (score >= 99) {
-            score = 99;
+        if (score >= 100) {
+            score = 100;
         }
+
+
+        if (0<=score&&score<60){
+            dog_current_state = 1;
+        }
+        else if(60<=score&&score<70){
+            dog_current_state = 2;
+        }
+        else if(70<=score&&score<80){
+            dog_current_state = 3;
+        }
+        else if(80<=score&&score<90){
+            dog_current_state = 4;
+        }
+        else if(90<=score&&score<=100){
+            dog_current_state = 5;
+        }
+
+        if(dog_previous_state!=dog_current_state)
+             score_show(score);
+        dog_previous_state=dog_current_state;
     }
 
+    void score_show(final int score){
 
+        if(0<=score&&score<60){
+            Glide.with(this).load(R.raw.dog_hungry_full).into(plant_dog);
+        }
+        else if(60<=score&&score<70){
+            Glide.with(this).load(R.raw.dog_normal_full).into(plant_dog);
+        }
+        else if(70<=score&&score<80){
+            Glide.with(this).load(R.raw.dog_singing_full).into(plant_dog);
+        }
+        else if(80<=score&&score<90){
+            Glide.with(this).load(R.raw.dog_surprise_full).into(plant_dog);
+        }
+        else if(90<=score&&score<=100){
+            Glide.with(this).load(R.raw.dog_satisfied_full).into(plant_dog);
+        }
+    }
     // 빨간색 픽셀 추가
     // 처음 그리고 10초마다 호출, JSON Array에서 데이터를 받아들여서 보컬 가이드를 그려줌
     private void drawGuideNotesOnScore() throws JSONException {
@@ -721,6 +770,7 @@ public class SingingActivity extends AppCompatActivity {
         double endDrawPoint = 0;
 
 
+
         // 10초 간격의 구간안의 note를 돈다.
         while ( BigDecimal.valueOf(JSON_NotesArray.getJSONObject(JSON_read_index).getDouble("time")).floatValue() / 1000000 < end_sec ) {
             if (JSON_read_index >= JSON_NotesArray.length()-1 ) {
@@ -730,6 +780,12 @@ public class SingingActivity extends AppCompatActivity {
             tempJSON_Array.add(JSON_NotesArray.getJSONObject(JSON_read_index));
 
             JSON_read_index++;
+        }
+
+
+        // 빈 구간일 경우 종료
+        if(tempJSON_Array.size() == 0) {
+            return;
         }
 
         // 이제 tempJSON_Array엔 10초 안에 그릴 모든 데이터가 담겨있음.
