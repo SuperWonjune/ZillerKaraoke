@@ -262,6 +262,7 @@ public class SingingActivity extends AppCompatActivity {
                 Intent intent=new Intent(SingingActivity.this, ResultActivity.class);
                 intent.putExtra("heart_num",heart_num);
                 intent.putExtra("score",score);
+                intent.putExtra("fail",0);
                 startActivity(intent);
 
             }
@@ -722,7 +723,9 @@ public class SingingActivity extends AppCompatActivity {
 
         // 10초 간격의 구간안의 note를 돈다.
         while ( BigDecimal.valueOf(JSON_NotesArray.getJSONObject(JSON_read_index).getDouble("time")).floatValue() / 1000000 < end_sec ) {
-
+            if (JSON_read_index >= JSON_NotesArray.length()-1 ) {
+                break;
+            }
             // 새로 만든 리스트에 10초 구간 안의 JSON_Array만 넣어둠.
             tempJSON_Array.add(JSON_NotesArray.getJSONObject(JSON_read_index));
 
@@ -754,10 +757,10 @@ public class SingingActivity extends AppCompatActivity {
             }
             // OFF를 읽었을 경우
             else {
-                // 드로잉 끝점 설정
-                endDrawPoint = readJSON.getDouble("time");
+                    // 드로잉 끝점 설정
+                    endDrawPoint = readJSON.getDouble("time");
 
-                // 시작점, 끝점으로 그리기
+                    // 시작점, 끝점으로 그리기
                 drawRedLineBetweenPoints(startDrawPoint, endDrawPoint, readJSON.getInt("key"));
                 lastSwitch = 1;
             }
@@ -1076,9 +1079,9 @@ public class SingingActivity extends AppCompatActivity {
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
                         Intent intent=new Intent(SingingActivity.this, ResultActivity.class);
-                        heart_num--;
                         intent.putExtra("heart_num",heart_num);
                         intent.putExtra("score",score);
+                        intent.putExtra("fail",1);
                         startActivity(intent);
                         Toast.makeText(getApplicationContext(),"너무해요!",Toast.LENGTH_LONG).show();
                     }

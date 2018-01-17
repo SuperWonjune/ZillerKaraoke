@@ -21,8 +21,10 @@ import java.util.Random;
 public class ResultActivity extends AppCompatActivity {
     ImageView homebtn, restartbtn,plant_dog,score_first_digit,score_second_digit,score_100;
     int heart_num,score=50;
+    int fail=0;
     GlideDrawableImageViewTarget ImageViewTarget;
     Handler handler=new Handler();
+    Handler handler2=new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +37,7 @@ public class ResultActivity extends AppCompatActivity {
         //SingingActivity로부터 하트 개수 가져오고 보이기
         Intent intent=getIntent();
         heart_num=intent.getIntExtra("heart_num",heart_num);
+        fail=intent.getIntExtra("fail",fail);
         score=intent.getIntExtra("score",score);
         Log.v("heart_num",String.valueOf(heart_num));
         heart_show(heart_num);
@@ -71,21 +74,59 @@ public class ResultActivity extends AppCompatActivity {
 
     //하트 개수 보여주기
     void heart_show(int heart_num){
-        ImageView heart1,heart2,heart3;
+        final ImageView heart1,heart2,heart3;
         heart1=findViewById(R.id.result_heart1);
         heart2=findViewById(R.id.result_heart2);
         heart3=findViewById(R.id.result_heart3);
+
         if(heart_num==1){
             heart1.setVisibility(View.VISIBLE);
+            if(fail==1||(0<=score&&score<50)){
+                heart_num--;
+                handler2.postDelayed(new Runnable(){
+                    @Override
+                    public void run() {
+                        //handler1.removeCallbacksAndMessages(null);
+                        handler2.removeCallbacks(this);
+                        heart1.setVisibility(View.INVISIBLE);
+                    }
+                },2000);
+                if(heart_num==0){
+                    Intent intent=new Intent(ResultActivity.this, LoadingActivity.class);
+                    startActivity(intent);
+                }
+            }
         }
         else if(heart_num==2){
             heart1.setVisibility(View.VISIBLE);
             heart2.setVisibility(View.VISIBLE);
+            if(fail==1||(0<=score&&score<50)){
+                heart_num--;
+                handler2.postDelayed(new Runnable(){
+                    @Override
+                    public void run() {
+                        //handler1.removeCallbacksAndMessages(null);
+                        handler2.removeCallbacks(this);
+                        heart2.setVisibility(View.INVISIBLE);
+                    }
+                },2000);
+            }
         }
         else if(heart_num==3){
             heart1.setVisibility(View.VISIBLE);
             heart2.setVisibility(View.VISIBLE);
             heart3.setVisibility(View.VISIBLE);
+            if(fail==1||(0<=score&&score<50)){
+                heart_num--;
+                handler2.postDelayed(new Runnable(){
+                    @Override
+                    public void run() {
+                        //handler1.removeCallbacksAndMessages(null);
+                        handler2.removeCallbacks(this);
+                        heart3.setVisibility(View.INVISIBLE);
+                    }
+                },2000);
+            }
         }
         else if(heart_num==0){
             //하트 소진 시 로딩 화면으로 가서 다시 시작
