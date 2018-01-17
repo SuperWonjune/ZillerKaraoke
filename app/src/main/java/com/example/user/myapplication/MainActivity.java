@@ -3,6 +3,7 @@ package com.example.user.myapplication;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -16,6 +17,8 @@ import android.widget.TextView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
 
+import org.json.JSONException;
+
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
@@ -24,6 +27,11 @@ public class MainActivity extends AppCompatActivity {
     Animation move;
     TextView speech_text;
     RelativeLayout layout,speech_bubble;
+
+    // 강아지 배고픔 상태
+    // 2-> 건강, 1->배고픔, 0-> 죽음
+    int dog_status = 3;
+    Handler handler;
 
     int heart_num=3;
 
@@ -46,10 +54,6 @@ public class MainActivity extends AppCompatActivity {
                 random_toast();
             }
         });
-
-        //식물 animation
-        move= AnimationUtils.loadAnimation(this,R.anim.translate);
-        layout.setAnimation(move);
 
         //하트 보여주기
         Intent intent = getIntent();
@@ -76,6 +80,44 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+
+
+        // 강아지 배고픔 상태 등록
+        handler = new Handler();
+
+        // handler로 화면상의 process bar 지속 이동 구현
+        Runnable startHunger = new Runnable() {
+            @Override
+            public void run() {
+
+                plantGetHunger();
+                // 함수 timer 딜레이
+                handler.postDelayed(this, 10000);
+            }
+        };
+
+        // 악보 녹음 등록
+        handler.postDelayed(startHunger, 0);
+
+    }
+
+    private  void plantGetHunger() {
+        if (dog_status > 0) {
+            dog_status--;
+        }
+        changeDogStatus();
+    }
+
+    private void changeDogStatus() {
+        if (dog_status == 0) {
+            Glide.with(this).load(R.raw.dog_death).into(plant_dog);
+        }
+        else if( dog_status == 1){
+            Glide.with(this).load(R.raw.dog_hungry_full).into(plant_dog);
+        }
+        else if( dog_status == 2){
+            Glide.with(this).load(R.raw.dog_normal_full).into(plant_dog);
+        }
     }
 
     //폰트 적용
