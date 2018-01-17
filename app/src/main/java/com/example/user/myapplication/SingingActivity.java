@@ -19,6 +19,7 @@ import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Debug;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.RequiresApi;
@@ -66,6 +67,9 @@ import be.tarsos.dsp.pitch.PitchDetectionResult;
 import be.tarsos.dsp.pitch.PitchProcessor;
 
 public class SingingActivity extends AppCompatActivity {
+
+    String songName = "";
+
     ArrayList<SongListViewItem> songs;
     MediaPlayer mp;
     SeekBar seekbar;
@@ -76,7 +80,7 @@ public class SingingActivity extends AppCompatActivity {
     ImageView albumArt;
     ImageView playbtn, stopbtn;
     ImageView plant_dog, note_rainbow1, note_rainbow2;
-    int heart_num;
+    int heart_num,score=99;
 
     // 음 높이 표시 관련
     TextView pitchText;
@@ -157,6 +161,7 @@ public class SingingActivity extends AppCompatActivity {
     //--------------------------------------------
     //  음 높낮이 매칭 관련
     TextView correctText;
+    TextView desiredText;
 
     JSONObject JSON_NOTES;
     String JSON_Notes_String = "";
@@ -167,8 +172,15 @@ public class SingingActivity extends AppCompatActivity {
     int start_sec = 0;
     int end_sec = 10;
     int JSON_read_index = 0;
+    int JSON_Compare_read_index = 0;
+    int JSON_Compare_read_index_Next = 1;
 
     float yPositionOfGuideOnNote = 0;
+
+    int keyDown = 12;
+
+    private Handler noteMatchHandler = new Handler();
+    private int checkLatency = 50;
 
 
 
@@ -203,6 +215,7 @@ public class SingingActivity extends AppCompatActivity {
         // 레이아웃에서 변수 받아오기
         pitchText = findViewById(R.id.pitchText);
         noteText = findViewById(R.id.codeText);
+        desiredText = findViewById(R.id.desiredText);
         scoreBar = findViewById(R.id.currentTimeBar);
         scoreLayout = findViewById(R.id.singing_note_background);
         lyric = findViewById(R.id.singing_lyrics);
@@ -247,6 +260,8 @@ public class SingingActivity extends AppCompatActivity {
             public void onCompletion(MediaPlayer m) {
                 Toast.makeText(getApplicationContext(), "수고했어요!", Toast.LENGTH_LONG).show();
                 Intent intent=new Intent(SingingActivity.this, ResultActivity.class);
+                intent.putExtra("heart_num",heart_num);
+                intent.putExtra("score",score);
                 startActivity(intent);
 
             }
@@ -270,7 +285,7 @@ public class SingingActivity extends AppCompatActivity {
 
         try {
             reader = new BufferedReader(
-                    new InputStreamReader(getAssets().open("lyricExample.txt"),"euc-kr"));
+                    new InputStreamReader(getAssets().open(songName + ".txt"),"euc-kr"));
 
             // do reading, usually loop until end of file reading
             String mLine;
@@ -316,7 +331,7 @@ public class SingingActivity extends AppCompatActivity {
 
 
         // JSON note 파일 로드
-        JSON_Notes_String = loadJSONFromAsset("heartbreaker.json");
+        JSON_Notes_String = loadJSONFromAsset(songName + ".json");
 
         // 로드된 파일로 JSONObject 생성
         try {
@@ -388,6 +403,32 @@ public class SingingActivity extends AppCompatActivity {
 
         // 악보 녹음 등록
         handler.postDelayed(recordOnScore, 0);
+
+
+        // 3. 현재 input 음과 음악의 높낮이 비교
+
+
+        // 1000 / checkLatency의 간격으로 일정시간 호출.
+        Runnable compareNotes = new Runnable() {
+            @Override
+            public void run() {
+
+                // 높낮이 비교 시작
+                try {
+                    compareVoiceToNotes();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                // 함수 timer 딜레이
+                noteMatchHandler.postDelayed(this,1000 / checkLatency);
+            }
+        };
+
+        noteMatchHandler.postDelayed( compareNotes, 0);
+
+
+
     }
 
     @Override
@@ -516,9 +557,142 @@ public class SingingActivity extends AppCompatActivity {
     }
 
 
+    private boolean isNotesSimilar(int inputKey) {
+        int changedKey = inputKey - keyDown;
+
+
+        int compareKey = 0;
+
+        // 옥타브 더하기
+        compareKey += currentCodeNumber * 12;
+
+        int addWithAlphabet = 0;
+
+        switch (currentCodeAlphabet) {
+            case "C":
+                addWithAlphabet = 0;
+                break;
+            case "D":
+                addWithAlphabet = 2;
+                break;
+            case "E":
+                addWithAlphabet = 4;
+                break;
+            case "F":
+                addWithAlphabet = 5;
+                break;
+            case "G":
+                addWithAlphabet = 7;
+                break;
+            case "A":
+                addWithAlphabet = 9;
+                break;
+            case "B":
+                addWithAlphabet = 11;
+                break;
+
+            default:
+                break;
+        }
+
+        compareKey += addWithAlphabet;
+
+        // input으로 들어온 key와 목소리의 key를 비교
+
+        if (changedKey - 3 <= compareKey && compareKey <= changedKey + 3 ) {
+            return true;
+        }
+        else {
+            return false;
+        }
+
+
+    }
+
+    private void compareVoiceToNotes() throws JSONException {
+        // 현재 재생되고 있는 음악의 시간 .. 유형 : 2.XXX
+        double currentSeconds = mp.getCurrentPosition() / 1000f;
+
+        double lastSavedSeconds_start = 0;
+        double lastSavedSeconds_end = 0;
+
+        int lastSavedKey = 0;
+        int comparingSwitch = 0;
+
+        String onoff = "";
+
+        // index 넘어갔을 경우 종료
+        if (JSON_Compare_read_index_Next >= JSON_NotesArray.length() || JSON_Compare_read_index >= JSON_NotesArray.length() ) {
+            return;
+        }
+
+
+        JSONObject currentJSON = JSON_NotesArray.getJSONObject(JSON_Compare_read_index);
+        JSONObject nextJSON = JSON_NotesArray.getJSONObject(JSON_Compare_read_index_Next);
+
+        lastSavedSeconds_start = currentJSON.getDouble("time") / 1000000;
+        lastSavedSeconds_end = nextJSON.getDouble("time") / 1000000;
+
+
+
+        // currentSeconds, 즉 현재 재생하는 구간이
+
+        // 1. 현재 검사하는 구간 사이의 이전일 경우
+        if (currentSeconds < lastSavedSeconds_start) {
+            comparingSwitch = 0;
+            onoff = "OFF";
+        }
+
+        // 2. 현재 검사하는 구간 사이에 위치할 경우
+        else if ( lastSavedSeconds_start <= currentSeconds && currentSeconds < lastSavedSeconds_end ) {
+            comparingSwitch = 1;
+            lastSavedKey = currentJSON.getInt("key");
+            onoff = "ON";
+        }
+
+
+        // 3. 현재 검사하는 구간을 넘어갔을 경우
+        else {
+            comparingSwitch = 0;
+            onoff = "OFF";
+
+            // 다음 array로 index 이동시킴
+            JSON_Compare_read_index += 2;
+            JSON_Compare_read_index_Next += 2;
+        }
+
+
+        // 결과값에 따라 전역변수 score에 더하거나 빼기
+        // comparingSwitch가 on인 상태일때만 비교를 함
+        if (comparingSwitch == 1) {
+            if (isNotesSimilar(lastSavedKey)) {
+                addScore(1);
+            }
+            else {
+                addScore(-1);
+            }
+        }
+
+        // 스코어 실시간으로 띄우기
+        desiredText.setText("" + score);
+    }
+
+    private void addScore(int inputScore) {
+        score += inputScore;
+        if (score <= 0) {
+            score = 0;
+        }
+        if (score >= 99) {
+            score = 99;
+        }
+    }
+
+
     // 빨간색 픽셀 추가
     // 처음 그리고 10초마다 호출, JSON Array에서 데이터를 받아들여서 보컬 가이드를 그려줌
     private void drawGuideNotesOnScore() throws JSONException {
+        int lastSwitch = 0;
+        int lastKey = 0;
 
         // 이전에 있던 붉은 픽셀들 초기화
         for (int i=0; i<redPixelList.size(); i++) {
@@ -575,6 +749,8 @@ public class SingingActivity extends AppCompatActivity {
             if (readJSON.getString("event").equals("ON")) {
                 // 드로잉 시작점 설정
                 startDrawPoint = readJSON.getDouble("time");
+                lastKey = readJSON.getInt("key");
+                lastSwitch = 0;
             }
             // OFF를 읽었을 경우
             else {
@@ -583,9 +759,15 @@ public class SingingActivity extends AppCompatActivity {
 
                 // 시작점, 끝점으로 그리기
                 drawRedLineBetweenPoints(startDrawPoint, endDrawPoint, readJSON.getInt("key"));
+                lastSwitch = 1;
             }
 
             tempJSON_Array_Index++;
+        }
+
+        // 10초 구간 내 마지막이 ON switch로 끝났을때, 그 점에서 끝까지 그려줌.
+        if (lastSwitch == 0) {
+            drawRedLineBetweenPoints(startDrawPoint, end_sec * 1000000, lastKey );
         }
 
         // 마지막, 다음 참조를 위한 index 추가
@@ -597,7 +779,7 @@ public class SingingActivity extends AppCompatActivity {
 
     private void drawRedLineBetweenPoints(double startPoint, double endPoint, int key) {
 
-        int changedKey = key-12;
+        int changedKey = key-keyDown;
         float yPositionGuideNote;
 
         // startPoint, Endpoint는 마이크로세컨드 단위로 받아옴
@@ -630,8 +812,6 @@ public class SingingActivity extends AppCompatActivity {
 
 
 
-
-
         float gapBetweenNotes = yLengthOfParentLayout / 41;
         int notesTransformed = 7 * (codeNumberOfKey-2) + getElevationByAlphabet(codeAlphabetOfKey);
 
@@ -660,8 +840,8 @@ public class SingingActivity extends AppCompatActivity {
             redPixelList.add(guideLocationPixel);
 
             // 픽셀 크기 재설정
-            guideLocationPixel.getLayoutParams().height = 25;
-            guideLocationPixel.getLayoutParams().width = 25;
+            guideLocationPixel.getLayoutParams().height = 28;
+            guideLocationPixel.getLayoutParams().width = 28;
             guideLocationPixel.requestLayout();
 
             // 픽셀의 위치 설정
@@ -809,6 +989,9 @@ public class SingingActivity extends AppCompatActivity {
         artist.setText(artist_name);
 
 
+        // 전역 변수 song 이름 설정
+        songName = title_name;
+
     }
 
 
@@ -895,6 +1078,7 @@ public class SingingActivity extends AppCompatActivity {
                         Intent intent=new Intent(SingingActivity.this, ResultActivity.class);
                         heart_num--;
                         intent.putExtra("heart_num",heart_num);
+                        intent.putExtra("score",score);
                         startActivity(intent);
                         Toast.makeText(getApplicationContext(),"너무해요!",Toast.LENGTH_LONG).show();
                     }
